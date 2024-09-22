@@ -73,10 +73,10 @@ public class TexturedMesh : MonoBehaviour {
 
 		// vertices for a quad
 
-		verts[0] = new Vector3 ( 1, 0, -1);
-		verts[1] = new Vector3 ( 1, 0,  1);
-		verts[2] = new Vector3 (-1, 0,  1);
-		verts[3] = new Vector3 (-1, 0, -1);
+		verts[0] = new Vector3 ( texture_width, -0.2f, 0);
+		verts[1] = new Vector3 ( texture_width, -0.2f, 2 * texture_height);
+		verts[2] = new Vector3 (-1 * texture_width, -0.2f, 2 * texture_height);
+		verts[3] = new Vector3 (-1 * texture_width, -0.2f, 0);
 
 		// create the uv coordinates
 
