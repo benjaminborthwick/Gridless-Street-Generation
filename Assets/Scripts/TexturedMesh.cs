@@ -6,9 +6,10 @@ using UnityEngine;
 
 public class TexturedMesh : MonoBehaviour {
 
-	public int texture_width = 64;
-	public int texture_height = 64;
-	public float scale = 10;
+	public int texture_width = 496;
+	public int texture_height = 496;
+	public float scale = 5;
+	Texture2D texture;
 
 	// create a quad that is textured
 	void Start () {
@@ -29,15 +30,14 @@ public class TexturedMesh : MonoBehaviour {
 		rend.material.color = new Color (1.0f, 1.0f, 1.0f, 1.0f);
 
 		// create a texture
-		Texture2D texture = make_a_texture();
-
+		texture = make_a_texture();
 		// attach the texture to the mesh
 		Renderer renderer = s.GetComponent<Renderer>();
 		renderer.material.mainTexture = texture;
 	}
 
 	// create a texture with Perlin noise
-	Texture2D make_a_texture() {
+	public Texture2D make_a_texture() {
 
 		// create the texture and an array of colors that will be copied into the texture
 		Texture2D texture = new Texture2D (texture_width, texture_height);
@@ -57,7 +57,7 @@ public class TexturedMesh : MonoBehaviour {
 
 		// do texture specific stuff, probably including making the mipmap levels
 		texture.Apply();
-
+		print(texture);
 		// return the texture
 		return (texture);
 	}
@@ -111,6 +111,10 @@ public class TexturedMesh : MonoBehaviour {
 	// update is called once per frame
 	void Update () {
 
+	}
+
+	public Texture2D getTexture() {
+		return texture;
 	}
 		
 }

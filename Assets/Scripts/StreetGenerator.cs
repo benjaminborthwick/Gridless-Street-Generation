@@ -13,12 +13,19 @@ public class StreetGenerator : MonoBehaviour
     private Vector3 currRiverPos;
     private float riverWidth = 2;
     [SerializeField]
-    private int numSegs = 2;
+    private int numSegs = 100;
+    [SerializeField]
+    private int iterationDepth = 100;
+
+    public int texture_width = 496;
+	public int texture_height = 496;
+	public float scale = 5;
+
+    public static Texture2D populationDensity;
     // Start is called before the first frame update
     void Start()
     {
         UnityEngine.Random.InitState(seed);
-
         // generate river that passes through (0, 0)
         // No current bounds control for river, so is capable of going off of population map depending on seed.
         Mesh riverMesh = new Mesh();
@@ -41,7 +48,24 @@ public class StreetGenerator : MonoBehaviour
 
         river.GetComponent<Renderer>().material.color = new Color(0.2f, 0.2f, 0.8f, 1.0f);
 
-        
+        // generating an initial highway, beginning on a different side of the pop map
+        GameObject streets = new GameObject("Streets");
+        streets.AddComponent<MeshFilter>();
+        streets.AddComponent<MeshRenderer>();
+        populationDensity = make_a_texture();
+        print(populationDensity);
+        Mesh streetMesh = new Mesh();
+        CombineInstance[] streetSegs = new CombineInstance[numSegs * 2];
+        StreetQueue streetBuds = new StreetQueue();
+        streetBuds.add(new Street(new Vector3(-496, 0, 100 + UnityEngine.Random.value * 700), 90, 2, populationDensity));
+        int iter = 0;
+        while (iter < iterationDepth && streetBuds.getLiveStreets() > 0) {
+            streetBuds.add(streetBuds.current().growStreet());
+            if (checkOutOFBounds(streetBuds.current().getPos())) streetBuds.remove();
+            iter++;
+        }
+        streets.GetComponent<MeshFilter>().mesh = streetBuds.CombineStreets();
+        streets.GetComponent<Renderer>().material.color = new Color(0.8f, 0.8f, 0.4f, 1.0f);
     }
 
     // Update is called once per frame
@@ -103,4 +127,34 @@ public class StreetGenerator : MonoBehaviour
         currRiverPos = new Vector3(startPos.x + length * Mathf.Sin(Mathf.Deg2Rad * dir), startPos.y, startPos.z + length * Mathf.Cos(Mathf.Deg2Rad * dir));
         return segMesh;
     }
+
+    bool checkOutOFBounds(Vector3 pos) {
+        return pos.x < -1 * texture_width || pos.x > texture_width || pos.z < 0 || pos.z > texture_height * 2;
+    }
+
+    Texture2D make_a_texture() {
+
+		// create the texture and an array of colors that will be copied into the texture
+		Texture2D texture = new Texture2D (texture_width, texture_height);
+		Color[] colors = new Color[texture_width * texture_height];
+        float offsetX = UnityEngine.Random.value * 1000;
+        float offsetY = UnityEngine.Random.value * 1000;
+		// create the Perlin noise pattern in "colors"
+		for (int i = 0; i < texture_width; i++)
+			for (int j = 0; j < texture_height; j++) {
+				float x = scale * i / (float) texture_width;
+				float y = scale * j / (float) texture_height;
+				float t = Mathf.PerlinNoise (x + offsetX, y + offsetY);                          // Perlin noise!
+				colors [j * texture_width + i] = new Color (t, t, t, 1.0f);  // gray scale values (r = g = b)
+			}
+
+		// copy the colors into the texture
+		texture.SetPixels(colors);
+
+		// do texture specific stuff, probably including making the mipmap levels
+		texture.Apply();
+		print(texture);
+		// return the texture
+		return (texture);
+	}
 }
