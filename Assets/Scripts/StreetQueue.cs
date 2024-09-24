@@ -53,4 +53,18 @@ public class StreetQueue {
     public int getLiveStreets() {
         return list.Count;
     }
+
+    public Street checkForIntersections(Street s) {
+        foreach (Street check in deadList) {
+            
+        }
+        return null;
+    }
+
+    public float checkIntersectSegment(Street extending, Vector3[] vertices) {
+        float dist = 2 << 20;
+        for (float i = 0; i <= 1; i += 0.2f) dist = Mathf.Min(Vector3.Distance(extending.getPos(), Vector3.Lerp(vertices[3], vertices[5], i)), dist);
+        Vector3 checkpoint = extending.extendRay(extending.getPos(), extending.getDir(), dist);
+        return ((checkpoint.x > vertices[3].x && checkpoint.x < vertices[5].x) || (checkpoint.x < vertices[3].x && checkpoint.x > vertices[5].x)) && (checkpoint.z > vertices[3].z && checkpoint.z < vertices[5].z || checkpoint.z < vertices[3].z && checkpoint.z > vertices[5].z) ? dist : -1;
+    }
 }

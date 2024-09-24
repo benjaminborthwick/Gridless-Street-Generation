@@ -7,7 +7,7 @@ public class Street {
     float dir;
     float roadWidth;
     float length;
-    Mesh mesh;
+    List<Mesh> mesh;
     static Texture2D populationDensity;
 
     public Street(Vector3 pos, float dir, float roadWidth) {
@@ -15,14 +15,14 @@ public class Street {
         this.dir = dir;
         this.roadWidth = roadWidth;
         this.length = 20 * roadWidth;
-        this.mesh = straightRoadSegment();
+        this.mesh = new List<Mesh>();
     }
 
     public Street(Vector3 pos, float dir, float roadWidth, Texture2D populationDensity) : this(pos, dir, roadWidth) {
         Street.populationDensity = populationDensity;
     }
 
-    public Street growStreet() {
+    public Street growStreet(StreetQueue streets) {
         if (roadWidth == 2) growHighway();
         else {
 
@@ -34,7 +34,7 @@ public class Street {
         else return null;
     }
 
-    Mesh growHighway() {
+    void growHighway() {
         float maxDensity = 0;
         float maxDensityAngle = 0;
         for (float angle = -30; angle <= 30; angle += 7.5f) {
@@ -46,13 +46,11 @@ public class Street {
             }
         }
         Mesh road = new Mesh();
-        CombineInstance[] roadSegs = new CombineInstance[3];
+        CombineInstance[] roadSegs = new CombineInstance[2];
         roadSegs[0].mesh = curvedRoadSegment(maxDensityAngle + (UnityEngine.Random.value - 0.5f) * 20);
         roadSegs[1].mesh = straightRoadSegment();
-        roadSegs[2].mesh = mesh;
         road.CombineMeshes(roadSegs, true, false);
-        mesh = road;
-        return road;
+        mesh.Add(road);
     }
 
     Mesh curvedRoadSegment(float angle) {
@@ -96,7 +94,7 @@ public class Street {
         return segMesh;
     }
 
-    Vector3 extendRay(Vector3 initPos, float dir, float dist) {
+    public Vector3 extendRay(Vector3 initPos, float dir, float dist) {
         return new Vector3(initPos.x + dist * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)), initPos.y, initPos.z + dist * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)));
     }
 
@@ -105,15 +103,35 @@ public class Street {
     }
 
     public Mesh getMesh() {
-        return mesh;
+        Mesh fullStreet = new Mesh();
+        CombineInstance[] segments = new CombineInstance[mesh.Count];
+        for (int i = 0; i < mesh.Count; i++) {
+            segments[i].mesh = mesh[i];
+        }
+        fullStreet.CombineMeshes(segments, true, false);
+        return fullStreet;
     }
 
     public Vector3 getPos() {
         return pos;
     }
 
+    public float getDir() {
+        return dir;
+    }
+
     public string toString() {
         return pos + "/n" + dir;
     }
 
+    public float checkIntersect(Street extending) {
+        float minDist = 2 << 20;
+        foreach (Mesh segment in mesh) {
+            float dist = 2 << 20;
+            for (float i = 0; i <= 1; i += 0.2f) dist = Mathf.Min(Vector3.Distance(extending.getPos(), Vector3.Lerp(segment.vertices[3], segment.vertices[5], i)), dist);
+            Vector3 checkpoint = extending.extendRay(extending.getPos(), extending.getDir(), dist);
+            if (((checkpoint.x > segment.vertices[3].x && checkpoint.x < segment.vertices[5].x) || (checkpoint.x < segment.vertices[3].x && checkpoint.x > segment.vertices[5].x)) && (checkpoint.z > segment.vertices[3].z && checkpoint.z < segment.vertices[5].z || checkpoint.z < segment.vertices[3].z && checkpoint.z > segment.vertices[5].z)
+                    && dist < minDist) minDist = dist;
+        }
+    }
 }

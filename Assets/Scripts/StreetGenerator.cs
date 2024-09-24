@@ -57,10 +57,11 @@ public class StreetGenerator : MonoBehaviour
         Mesh streetMesh = new Mesh();
         CombineInstance[] streetSegs = new CombineInstance[numSegs * 2];
         StreetQueue streetBuds = new StreetQueue();
-        streetBuds.add(new Street(new Vector3(-496, 0, 100 + UnityEngine.Random.value * 700), 90, 2, populationDensity));
+        streetBuds.add(new Street(new Vector3(-496, 0, 100 + 50/*UnityEngine.Random.value * 700*/), 90, 2, populationDensity));
         int iter = 0;
+        streetBuds.add(streetBuds.current().growStreet(streetBuds));
         while (iter < iterationDepth && streetBuds.getLiveStreets() > 0) {
-            streetBuds.add(streetBuds.current().growStreet());
+            streetBuds.add(streetBuds.current().growStreet(streetBuds));
             if (checkOutOFBounds(streetBuds.current().getPos())) streetBuds.remove();
             iter++;
         }
