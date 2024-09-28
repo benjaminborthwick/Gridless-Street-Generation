@@ -54,17 +54,29 @@ public class StreetQueue {
         return list.Count;
     }
 
-    public Street checkForIntersections(Street s) {
-        foreach (Street check in deadList) {
-            
-        }
-        return null;
+    public int getTotalStreets() {
+        return list.Count + deadList.Count;
     }
 
-    public float checkIntersectSegment(Street extending, Vector3[] vertices) {
-        float dist = 2 << 20;
-        for (float i = 0; i <= 1; i += 0.2f) dist = Mathf.Min(Vector3.Distance(extending.getPos(), Vector3.Lerp(vertices[3], vertices[5], i)), dist);
-        Vector3 checkpoint = extending.extendRay(extending.getPos(), extending.getDir(), dist);
-        return ((checkpoint.x > vertices[3].x && checkpoint.x < vertices[5].x) || (checkpoint.x < vertices[3].x && checkpoint.x > vertices[5].x)) && (checkpoint.z > vertices[3].z && checkpoint.z < vertices[5].z || checkpoint.z < vertices[3].z && checkpoint.z > vertices[5].z) ? dist : -1;
+    public Street checkForIntersections(Street s) {
+        float closestDist = 2 << 24;
+        int closestMeshInd = -1;
+        Street closestStreet = null;
+        int meshInd;
+        foreach (Street street in deadList) {
+            meshInd = street.checkIntersect(s);
+            if (meshInd > 0 && Street.distToMesh(s, street.getSegment(meshInd)) < closestDist) {
+                closestDist = Street.distToMesh(s, street.getSegment(meshInd));
+                closestMeshInd = meshInd;
+                closestStreet = street;
+            }
+        }
+        meshInd = s.checkIntersect(s);
+            if (meshInd > 0 && Street.distToMesh(s, s.getSegment(meshInd)) < closestDist) {
+                closestDist = Street.distToMesh(s, s.getSegment(meshInd));
+                closestStreet = s;
+            }
+        if (closestDist < 200) return closestStreet;
+        else return null;
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 public class StreetGenerator : MonoBehaviour
 {
     [SerializeField]
-    private int seed = 1;
+    private int seed = 40238;
 
     [SerializeField]
     private float dirModifier = 0.75f;
@@ -17,8 +17,8 @@ public class StreetGenerator : MonoBehaviour
     [SerializeField]
     private int iterationDepth = 100;
 
-    public int texture_width = 496;
-	public int texture_height = 496;
+    public int texture_width = 4096;
+	public int texture_height = 4096;
 	public float scale = 5;
 
     public static Texture2D populationDensity;
@@ -26,6 +26,20 @@ public class StreetGenerator : MonoBehaviour
     void Start()
     {
         UnityEngine.Random.InitState(seed);
+
+        Mesh groundMesh = new Mesh();
+        Vector3[] groundVerts = {new Vector3(-1 * texture_width, -1, 0),
+                           new Vector3(-1 * texture_width, -1, 2 * texture_height),
+                           new Vector3(texture_width, -1, 2 * texture_height),
+                           new Vector3(texture_width, -1, 0)};
+        int[] groundTris = {0, 1, 2, 0, 2, 3};
+        groundMesh.vertices = groundVerts;
+        groundMesh.triangles = groundTris;
+        GameObject ground = new GameObject("Ground");
+        ground.AddComponent<MeshFilter>();
+        ground.AddComponent<MeshRenderer>();
+        ground.GetComponent<MeshFilter>().mesh = groundMesh;
+        ground.GetComponent<Renderer>().material.color = new Color(86f/255, 152f/255, 50f/255, 255f/255);
         // generate river that passes through (0, 0)
         // No current bounds control for river, so is capable of going off of population map depending on seed.
         Mesh riverMesh = new Mesh();
@@ -33,12 +47,16 @@ public class StreetGenerator : MonoBehaviour
         currRiverPos = new Vector3(0, 0, 0);
         float segLength = 0;
         float dir = 0;
+        List<Mesh> riverSegMeshes = new List<Mesh>();
         for (int i = 0; i < numSegs; i++) {
             segLength = 5 + UnityEngine.Random.value * 20;
             dir = UnityEngine.Random.value * 60 - 30;
             riverSegs[i * 2].mesh = straightRiverSegment(segLength, currRiverPos, currDir);
             riverSegs[i * 2 + 1].mesh = curvedRiverSegment(dir);
+            riverSegMeshes.Add(riverSegs[i * 2].mesh);
+            riverSegMeshes.Add(riverSegs[i * 2 + 1].mesh);
         }
+        Street.initRiverMesh(riverSegMeshes);
         riverMesh.CombineMeshes(riverSegs, true, false);
 
         GameObject river = new GameObject("River");
@@ -57,16 +75,26 @@ public class StreetGenerator : MonoBehaviour
         Mesh streetMesh = new Mesh();
         CombineInstance[] streetSegs = new CombineInstance[numSegs * 2];
         StreetQueue streetBuds = new StreetQueue();
-        streetBuds.add(new Street(new Vector3(-496, 0, 100 + 50/*UnityEngine.Random.value * 700*/), 90, 2, populationDensity));
+        streetBuds.add(new Street(new Vector3(-1 * texture_width, 0, 200 + UnityEngine.Random.value * (texture_height * 2 - 400)), 90, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(200 - texture_width + UnityEngine.Random.value * (texture_width * 2 - 200), 0, 0), 0, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(texture_width, 0, 200 + UnityEngine.Random.value * (texture_height * 2 - 400)), -90, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(200 - texture_width + UnityEngine.Random.value * (texture_width * 2 - 400), 0, texture_height * 2), 180, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(-1 * texture_width, 0, 200 + UnityEngine.Random.value * (texture_height * 2 - 400)), 90, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(200 - texture_width + UnityEngine.Random.value * (texture_width * 2 - 200), 0, 0), 0, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(texture_width, 0, 200 + UnityEngine.Random.value * (texture_height * 2 - 400)), -90, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(200 - texture_width + UnityEngine.Random.value * (texture_width * 2 - 400), 0, texture_height * 2), 180, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(-1 * texture_width, 0, 200 + UnityEngine.Random.value * (texture_height * 2 - 400)), 90, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(200 - texture_width + UnityEngine.Random.value * (texture_width * 2 - 200), 0, 0), 0, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(texture_width, 0, 200 + UnityEngine.Random.value * (texture_height * 2 - 400)), -90, 4, populationDensity));
+        streetBuds.add(new Street(new Vector3(200 - texture_width + UnityEngine.Random.value * (texture_width * 2 - 400), 0, texture_height * 2), 180, 4, populationDensity));
         int iter = 0;
-        streetBuds.add(streetBuds.current().growStreet(streetBuds));
         while (iter < iterationDepth && streetBuds.getLiveStreets() > 0) {
             streetBuds.add(streetBuds.current().growStreet(streetBuds));
-            if (checkOutOFBounds(streetBuds.current().getPos())) streetBuds.remove();
+            if (streetBuds.getLiveStreets() > 0 && checkOutOFBounds(streetBuds.current().getPos())) streetBuds.remove();
             iter++;
         }
         streets.GetComponent<MeshFilter>().mesh = streetBuds.CombineStreets();
-        streets.GetComponent<Renderer>().material.color = new Color(0.8f, 0.8f, 0.4f, 1.0f);
+        streets.GetComponent<Renderer>().material.color = new Color(0.9f, 0.9f, 0.9f, 1.0f);
     }
 
     // Update is called once per frame
