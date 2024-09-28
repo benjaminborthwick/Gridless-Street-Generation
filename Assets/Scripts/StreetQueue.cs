@@ -5,14 +5,17 @@ using UnityEngine;
 public class StreetQueue {
     LinkedList<Street> list;
     LinkedList<Street> deadList;
+    int highways;
 
     public StreetQueue() {
         list = new LinkedList<Street>();
         deadList = new LinkedList<Street>();
+        highways = 0;
     }
     
     public void add(Street s) {
         if (s == null) return;
+        if (s.getRoadWidth() == 4) highways++;
         if (list.Count == 0) {
             list.AddFirst(s);
             return;
@@ -39,11 +42,26 @@ public class StreetQueue {
 
     public Mesh CombineStreets() {
         Mesh streetMesh = new Mesh();
-        CombineInstance[] streets = new CombineInstance[list.Count + deadList.Count];
+        CombineInstance[] streets = new CombineInstance[list.Count + deadList.Count - highways];
         LinkedListNode<Street> curr = list.First;
+        int count = 0;
         for (int i = 0; i < list.Count + deadList.Count; i++) {
             if (i == list.Count) curr = deadList.First;
-            streets[i].mesh = curr.Value.getMesh();
+            if (curr.Value.getRoadWidth() < 4) streets[count++].mesh = curr.Value.getMesh();
+            curr = curr.Next;
+        }
+        streetMesh.CombineMeshes(streets, true, false);
+        return streetMesh;
+    }
+
+    public Mesh CombineHighways() {
+        Mesh streetMesh = new Mesh();
+        CombineInstance[] streets = new CombineInstance[highways];
+        LinkedListNode<Street> curr = list.First;
+        int count = 0;
+        for (int i = 0; i < list.Count + deadList.Count; i++) {
+            if (i == list.Count) curr = deadList.First;
+            if (curr.Value.getRoadWidth() == 4) streets[count++].mesh = curr.Value.getMesh();
             curr = curr.Next;
         }
         streetMesh.CombineMeshes(streets, true, false);

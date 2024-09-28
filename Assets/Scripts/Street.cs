@@ -27,15 +27,15 @@ public class Street {
             if (buildIntersection(this, intersecting)) streets.remove();
             return null;
         }
-        checkRiverIntersect();
+        if (checkRiverIntersect()) streets.remove();
         if (roadWidth == 4) growHighway();
         else {
-
+            mesh.Add(curvedRoadSegment((UnityEngine.Random.value - 0.5f) * 20));
+            mesh.Add(straightRoadSegment(20 * roadWidth));
         }
-
-        if (UnityEngine.Random.value < 0.2f / (roadWidth * roadWidth)) {
-            return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth);
-        }
+        if (roadWidth < 4 && UnityEngine.Random.value < 0.05f) streets.remove();
+        if (UnityEngine.Random.value < 0.2f / (roadWidth * roadWidth)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth);
+        else if (roadWidth > 1 && UnityEngine.Random.value < (0.1 * roadWidth + populationDensity.GetPixel((int) pos.x, (int) pos.z).r / 2f)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth / 2);
         else return null;
     }
 
@@ -66,24 +66,30 @@ public class Street {
             return true;
         } else {
             Vector3 targetPoint = extendRay(segCenter, segAngle + (angleDiff > 0 ? -90 : 90), growing.getRoadWidth() * 10);
-            Debug.Log("heading from " + growing.getPos() + " to " + targetPoint);
             float dAngle;
             float dist;
-            dAngle = calcVectorAngle(targetPoint - growing.getPos()) - growing.getDir();
-            dist = (targetPoint - growing.getPos()).magnitude;
-            Debug.Log("turning by " + dAngle);
-            int iter = 0;
-            while (dist > 5 && iter < 10) {
-                growing.turnRoad(dAngle);
-                growing.extendRoad(Mathf.Min(dist, 40));
+            if (growing.getRoadWidth() == 4) {
                 dAngle = calcVectorAngle(targetPoint - growing.getPos()) - growing.getDir();
                 dist = (targetPoint - growing.getPos()).magnitude;
-                iter++;
-            }
-            growing.turnRoad(calcVectorAngle(segCenter - growing.getPos()) - growing.getDir());
-            if (growing.getRoadWidth() == 4) {
+                int iter = 0;
+                while (dist > 5 && iter < 10) {
+                    growing.turnRoad(dAngle);
+                    growing.extendRoad(Mathf.Min(dist, 40));
+                    dAngle = calcVectorAngle(targetPoint - growing.getPos()) - growing.getDir();
+                    dist = (targetPoint - growing.getPos()).magnitude;
+                    iter++;
+                }
+                growing.turnRoad(calcVectorAngle(segCenter - growing.getPos()) - growing.getDir());
                 growing.extendBridge();
-            } else growing.extendRoad(growing.getRoadWidth() * 20);
+            } else {
+                if (growing.getRoadWidth() == intersected.getRoadWidth()) {
+                    growing.turnRoad(calcVectorAngle(segCenter - growing.getPos()) - growing.getDir());
+                    growing.extendRoad(growing.getRoadWidth() * 20);
+                } else if (UnityEngine.Random.value < 0.65) {
+                    growing.turnRoad(UnityEngine.Random.value < 0.5 ? -90 : 90);
+                    growing.extendRoad(growing.getRoadWidth() * 20);
+                } else return true;
+            }
             return false;
         }
     }
@@ -140,54 +146,54 @@ public class Street {
     public void extendBridge() {
         Mesh bridgeMesh = new Mesh();
         CombineInstance[] bridgeParts = new CombineInstance[13];
-        Vector3[] tri1verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
+        Vector3[] tri1verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
         int[] tri1tris = {0, 1, 2};
-        Vector3[] tri2verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
+        Vector3[] tri2verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                               new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
         int[] tri2tris = {0, 2, 1};
-        Vector3[] rect1verts = {new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
+        Vector3[] rect1verts = {new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
         int[] rect1tris = {3, 2, 1, 3, 1, 0};
-        Vector3[] supp1verts = {new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
+        Vector3[] supp1verts = {new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
         int[] supp1tris = {0, 1, 2, 0, 2, 3, 3, 2, 1, 3, 1, 0};
-        Vector3[] supp2verts = {new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
+        Vector3[] supp2verts = {new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 28 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z + 28 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 32 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + 32 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
         int[] supp2tris = {3, 2, 1, 3, 1, 0, 0, 1, 2, 0, 2, 3};
-        Vector3[] supp3verts = {new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
+        Vector3[] supp3verts = {new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
         int[] supp3tris = {0, 1, 2, 0, 2, 3, 3, 2, 1, 3, 1, 0};
-        Vector3[] supp4verts = {new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
+        Vector3[] supp4verts = {new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 48 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z + 48 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x + 52 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + 52 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
         int[] supp4tris = {3, 2, 1, 3, 1, 0, 0, 1, 2, 0, 2, 3};
         bridgeParts[0].mesh = straightRoadSegment(20, 10);
         bridgeParts[1].mesh = straightRoadSegment(40, 0);
         bridgeParts[2].mesh = straightRoadSegment(20, -10);
-        Vector3[] tri3verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
+        Vector3[] tri3verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
         int[] tri3tris = {0, 2, 1};
-        Vector3[] tri4verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
+        Vector3[] tri4verts = {new Vector3(pos.x + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                               new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90)))};
         int[] tri4tris = {0, 1, 2};
-        Vector3[] rect2verts = {new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 0, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
-                                new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
-                                new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), 0, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
+        Vector3[] rect2verts = {new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir - 90)), pos.y + 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir - 90))),
+                                new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y + 10, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90))),
+                                new Vector3(pos.x - 20 * Mathf.Sin(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Sin(Mathf.Deg2Rad * (dir + 90)), pos.y, pos.z - 20 * Mathf.Cos(Mathf.Deg2Rad * dir) + roadWidth * Mathf.Cos(Mathf.Deg2Rad * (dir + 90)))};
         int[] rect2tris = {0, 1, 2, 0, 2, 3};
         bridgeParts[3].mesh = new Mesh();
         bridgeParts[3].mesh.vertices = tri1verts;
@@ -283,7 +289,7 @@ public class Street {
         return closestSegInd;
     }
 
-    public void checkRiverIntersect() {
+    public bool checkRiverIntersect() {
         float minDist = 2 << 20;
         int closestSegInd = -1;
         for (int i = 0; i < riverSegs.Count; i+= 2) {
@@ -293,13 +299,11 @@ public class Street {
             Vector3 checkpoint = extendRay(getPos(), getDir(), dist);
             if (((checkpoint.x > segment.vertices[0].x && checkpoint.x < segment.vertices[2].x) || (checkpoint.x < segment.vertices[0].x && checkpoint.x > segment.vertices[2].x)) && ((checkpoint.z > segment.vertices[0].z && checkpoint.z < segment.vertices[2].z) || (checkpoint.z < segment.vertices[0].z && checkpoint.z > segment.vertices[2].z))
                     && dist < minDist) {
-                Debug.Log("Testing from position " + getPos() + " in direction " + getDir() + " to checkpoint " + checkpoint);
-                Debug.Log("success!");
                 minDist = dist;
                 closestSegInd = i;
             }
         }
-        if (closestSegInd < 0 || minDist > 160) return;
+        if (closestSegInd < 0 || minDist > 160) return false;
         Mesh intersectedSeg = riverSegs[closestSegInd];
         float segAngle = calcVectorAngle(intersectedSeg.vertices[2] - intersectedSeg.vertices[0]);
         float angleDiff = Mathf.DeltaAngle(segAngle, getDir());
@@ -312,25 +316,27 @@ public class Street {
         } else {
             Vector3 segCenter = Vector3.Lerp(intersectedSeg.vertices[0], intersectedSeg.vertices[3], 0.5f);
             Vector3 targetPoint = extendRay(segCenter, segAngle + (angleDiff > 0 ? -90 : 90), getRoadWidth() * 10);
-            Debug.Log("heading from " + getPos() + " to " + targetPoint);
             float dAngle;
             float dist;
-            dAngle = calcVectorAngle(targetPoint - getPos()) - getDir();
-            dist = (targetPoint - getPos()).magnitude;
-            Debug.Log("turning by " + dAngle);
-            int iter = 0;
-            while (dist > 5 && iter < 10) {
-                turnRoad(dAngle);
-                extendRoad(Mathf.Min(dist, 40));
+            if (getRoadWidth() == 4) {
                 dAngle = calcVectorAngle(targetPoint - getPos()) - getDir();
                 dist = (targetPoint - getPos()).magnitude;
-                iter++;
-            }
-            turnRoad(calcVectorAngle(segCenter - getPos()) - getDir());
-            if (getRoadWidth() == 4) {
+                int iter = 0;
+                while (dist > 5 && iter < 10) {
+                    turnRoad(dAngle);
+                    extendRoad(Mathf.Min(dist, 40));
+                    dAngle = calcVectorAngle(targetPoint - getPos()) - getDir();
+                    dist = (targetPoint - getPos()).magnitude;
+                    iter++;
+                }
+                turnRoad(calcVectorAngle(segCenter - getPos()) - getDir());
                 extendBridge();
-            } else extendRoad(getRoadWidth() * 20);
+            } else if (UnityEngine.Random.value < 0.4) {
+                turnRoad(UnityEngine.Random.value < 0.5 ? -90 : 90);
+                extendRoad(getRoadWidth() * 20);
+            } else return true;
         }
+        return false;
     }
 
     public static float distToMesh(Street extending, Mesh intersecting) {
