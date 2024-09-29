@@ -329,12 +329,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56f8927a01735e246b578b3e69f31069, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  seed: 246
+  seed: 40240
   dirModifier: 0.75
-  numSegs: 100
-  iterationDepth: 300
-  texture_width: 496
-  texture_height: 496
+  numSegs: 300
+  fourWidthDepth: 350
+  twoWidthDepth: 1000
+  oneWidthDepth: 1450
+  texture_width: 4096
+  texture_height: 4096
   scale: 5
 --- !u!4 &1907317182
 Transform:

@@ -109,6 +109,45 @@ public class StreetGenerator : MonoBehaviour
         streets.AddComponent<MeshRenderer>();
         streets.GetComponent<MeshFilter>().mesh = streetBuds.CombineStreets();
         streets.GetComponent<Renderer>().material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
+
+        // for (int i = 0; i < 6; i++) {
+        //     Vector3 buildingLoc;
+        //     bool validLoc = false;
+        //     //20 tries at finding a building location before giving up
+        //     for (int j = 0; j < 20; j++) {
+        //         Street street = streetBuds.getDead((int) Mathf.Floor(UnityEngine.Random.value * streetBuds.getDeadHighways()));
+        //         print(street.getMeshSize());
+        //         int ind = 1 + 2 * (int) Mathf.Floor(UnityEngine.Random.value * (street.getMeshSize() / 2f));
+        //         print(ind);
+        //         Mesh seg = street.getSegment(1 + 2 * (int) Mathf.Floor(UnityEngine.Random.value * (street.getMeshSize() / 2f - 2)));
+        //         buildingLoc = Street.extendRay(Vector3.Lerp(seg.vertices[0], seg.vertices[3], 0.5f), (UnityEngine.Random.value > 0.5 ? 90 : -90) + Street.calcVectorAngle(seg.vertices[2] - seg.vertices[0]), 15);
+        //         if (!streetBuds.checkBuildingSpawnable(buildingLoc, Street.calcVectorAngle(seg.vertices[2] - seg.vertices[0]), riverMesh)) {
+        //             validLoc = true;
+        //             break;
+        //         };
+        //     }
+        //     if (validLoc) {
+        //         float size = 10;
+        //         Vector3[] buildingVerts = 
+        //                {new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir - 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir - 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir + 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir + 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 - 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 - 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 + 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 + 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir - 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir - 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir + 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir + 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 - 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 - 30))),
+        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 + 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 + 30)))};
+        //         int[] buildingTris = {0, 4, 5, 0, 5, 1, 1, 5, 6, 1, 6, 2, 2, 6, 7, 2, 7, 3, 3, 7, 4, 3, 4, 0, 6, 5, 4, 6, 4, 7};
+        //         Mesh buildingMesh = new Mesh();
+        //         buildingMesh.vertices = buildingVerts;
+        //         buildingMesh.triangles = buildingTris;
+        //         GameObject building = new GameObject("Building");
+        //         building.AddComponent<MeshFilter>();
+        //         building.AddComponent<MeshRenderer>();
+        //         building.GetComponent<MeshFilter>().mesh = buildingMesh;
+        //         building.GetComponent<Renderer>().material.color = new Color(0.5f, 0.2f, 0.2f, 1);
+        //     }
+        // }
     }
 
     // Update is called once per frame

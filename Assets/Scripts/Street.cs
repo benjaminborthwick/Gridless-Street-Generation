@@ -27,19 +27,20 @@ public class Street {
             if (buildIntersection(this, intersecting)) streets.remove();
             return null;
         }
-        if (checkRiverIntersect()) streets.remove();
-        if (roadWidth == 4) growHighway();
+        if (bridgeRiver(checkRiverIntersect())) streets.remove();
+        if (roadWidth == 4) growHighway(streets);
         else {
             mesh.Add(curvedRoadSegment((UnityEngine.Random.value - 0.5f) * 20));
-            mesh.Add(straightRoadSegment(20 * roadWidth));
+            if (streets.checkForIntersections(this) != null || checkRiverIntersect() != null) mesh.Add(straightRoadSegment(5));
+            else mesh.Add(straightRoadSegment(20 * roadWidth));
         }
         if (roadWidth < 4 && UnityEngine.Random.value < 0.05f) streets.remove();
         if (UnityEngine.Random.value < 0.2f / (roadWidth * roadWidth)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth);
-        else if (roadWidth > 1 && UnityEngine.Random.value < (0.1 * roadWidth + populationDensity.GetPixel((int) pos.x, (int) pos.z).r / 2f)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth / 2);
+        else if (roadWidth > 1 && UnityEngine.Random.value < (0.15 * roadWidth + populationDensity.GetPixel((int) pos.x, (int) pos.z).r / 2f)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth / 2);
         else return null;
     }
 
-    void growHighway() {
+    void growHighway(StreetQueue streets) {
         float maxDensity = 0;
         float maxDensityAngle = 0;
         for (float angle = -15; angle <= 15; angle += 5f) {
@@ -51,7 +52,8 @@ public class Street {
             }
         }
         mesh.Add(curvedRoadSegment(maxDensityAngle + (UnityEngine.Random.value - 0.5f) * 20));
-        mesh.Add(straightRoadSegment(20 * roadWidth));
+        if (streets.checkForIntersections(this) != null || checkRiverIntersect() != null) mesh.Add(straightRoadSegment(5));
+        else mesh.Add(straightRoadSegment(20 * roadWidth));
     }
 
     // returns whether or not the growing street should be deleted
@@ -251,6 +253,10 @@ public class Street {
         return fullStreet;
     }
 
+    public int getMeshSize() {
+        return mesh.Count;
+    }
+
     public Mesh getSegment(int ind) {
         return mesh[ind];
     } 
@@ -289,7 +295,7 @@ public class Street {
         return closestSegInd;
     }
 
-    public bool checkRiverIntersect() {
+    public Mesh checkRiverIntersect() {
         float minDist = 2 << 20;
         int closestSegInd = -1;
         for (int i = 0; i < riverSegs.Count; i+= 2) {
@@ -303,8 +309,12 @@ public class Street {
                 closestSegInd = i;
             }
         }
-        if (closestSegInd < 0 || minDist > 160) return false;
-        Mesh intersectedSeg = riverSegs[closestSegInd];
+        if (closestSegInd < 0 || minDist > 160) return null;
+        return riverSegs[closestSegInd];
+    }
+        
+    public bool bridgeRiver(Mesh intersectedSeg) {
+        if (intersectedSeg == null) return false;
         float segAngle = calcVectorAngle(intersectedSeg.vertices[2] - intersectedSeg.vertices[0]);
         float angleDiff = Mathf.DeltaAngle(segAngle, getDir());
         if ((angleDiff < 45 && angleDiff > 0) || angleDiff < -135) {
