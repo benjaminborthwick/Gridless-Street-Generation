@@ -34,16 +34,17 @@ public class Street {
             if (streets.checkForIntersections(this) != null || checkRiverIntersect() != null) mesh.Add(straightRoadSegment(5));
             else mesh.Add(straightRoadSegment(20 * roadWidth));
         }
-        if (roadWidth < 4 && UnityEngine.Random.value < 0.05f) streets.remove();
-        if (UnityEngine.Random.value < 0.2f / (roadWidth * roadWidth)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth);
-        else if (roadWidth > 1 && UnityEngine.Random.value < (0.15 * roadWidth + populationDensity.GetPixel((int) pos.x, (int) pos.z).r / 2f)) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth / 2);
+        if (roadWidth < 4 && UnityEngine.Random.value < 0.02f) streets.remove();
+        Debug.Log(populationDensity.GetPixel((int) pos.x, (int) pos.z).r);
+        if (UnityEngine.Random.value < 0.2f / roadWidth) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth);
+        else if (roadWidth > 1 && (UnityEngine.Random.value < (0.1 * roadWidth + populationDensity.GetPixel((int) pos.x, (int) pos.z).r / 2f))) return new Street(new Vector3(pos.x, pos.y, pos.z), dir + (UnityEngine.Random.value > 0.5 ? 90 : -90), roadWidth / 2);
         else return null;
     }
 
     void growHighway(StreetQueue streets) {
         float maxDensity = 0;
         float maxDensityAngle = 0;
-        for (float angle = -15; angle <= 15; angle += 5f) {
+        for (float angle = -10; angle <= 10; angle += 5f) {
             Vector3 testPoint = extendRay(pos, dir + angle, 200);
             float popDens = populationDensity.GetPixel((int) testPoint.x, (int) testPoint.z).r;
             if (popDens > maxDensity) {
@@ -51,7 +52,7 @@ public class Street {
                 maxDensityAngle = angle;
             }
         }
-        mesh.Add(curvedRoadSegment(maxDensityAngle + (UnityEngine.Random.value - 0.5f) * 20));
+        mesh.Add(curvedRoadSegment(maxDensityAngle + (UnityEngine.Random.value - 0.5f) * 30));
         if (streets.checkForIntersections(this) != null || checkRiverIntersect() != null) mesh.Add(straightRoadSegment(5));
         else mesh.Add(straightRoadSegment(20 * roadWidth));
     }
@@ -71,6 +72,11 @@ public class Street {
             float dAngle;
             float dist;
             if (growing.getRoadWidth() == 4) {
+                if (UnityEngine.Random.value < 0.3) {
+                    growing.turnRoad(calcVectorAngle(segCenter - growing.getPos()) - growing.getDir());
+                    growing.extendRoad((segCenter - growing.getPos()).magnitude);
+                    return true;
+                }
                 dAngle = calcVectorAngle(targetPoint - growing.getPos()) - growing.getDir();
                 dist = (targetPoint - growing.getPos()).magnitude;
                 int iter = 0;
@@ -258,6 +264,7 @@ public class Street {
     }
 
     public Mesh getSegment(int ind) {
+        if (ind < 0 || ind >= mesh.Count) return mesh[1];
         return mesh[ind];
     } 
 
@@ -300,8 +307,7 @@ public class Street {
         int closestSegInd = -1;
         for (int i = 0; i < riverSegs.Count; i+= 2) {
             Mesh segment = riverSegs[i];
-            float dist = 2 << 20;
-            for (float j = 0; j <= 1; j += 0.2f) dist = Mathf.Min(Vector3.Distance(getPos(), Vector3.Lerp(segment.vertices[0], segment.vertices[3], j)), dist);
+            float dist = Vector3.Distance(getPos(), Vector3.Lerp(segment.vertices[0], segment.vertices[3], 0.5f));
             Vector3 checkpoint = extendRay(getPos(), getDir(), dist);
             if (((checkpoint.x > segment.vertices[0].x && checkpoint.x < segment.vertices[2].x) || (checkpoint.x < segment.vertices[0].x && checkpoint.x > segment.vertices[2].x)) && ((checkpoint.z > segment.vertices[0].z && checkpoint.z < segment.vertices[2].z) || (checkpoint.z < segment.vertices[0].z && checkpoint.z > segment.vertices[2].z))
                     && dist < minDist) {

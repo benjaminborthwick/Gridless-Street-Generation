@@ -5,19 +5,19 @@ using UnityEngine;
 public class StreetGenerator : MonoBehaviour
 {
     [SerializeField]
-    private int seed = 40238;
+    private int seed = 496283;
 
     [SerializeField]
     private float dirModifier = 0.75f;
     private float currDir = 0;
     private Vector3 currRiverPos;
-    private float riverWidth = 2;
+    private float riverWidth = 6;
     [SerializeField]
     private int numSegs = 100;
     [SerializeField]
-    private int fourWidthDepth = 300;
+    private int fourWidthDepth = 350;
     [SerializeField]
-    private int twoWidthDepth = 900;
+    private int twoWidthDepth = 1000;
     [SerializeField]
     private int oneWidthDepth = 1350;
     public int texture_width = 4096;
@@ -47,13 +47,13 @@ public class StreetGenerator : MonoBehaviour
         // No current bounds control for river, so is capable of going off of population map depending on seed.
         Mesh riverMesh = new Mesh();
         CombineInstance[] riverSegs = new CombineInstance[numSegs * 2];
-        currRiverPos = new Vector3(0, 0, 0);
+        currRiverPos = new Vector3(0, 0, texture_height);
         float segLength = 0;
-        float dir = 0;
+        float dir = UnityEngine.Random.value * 360;
         List<Mesh> riverSegMeshes = new List<Mesh>();
         for (int i = 0; i < numSegs; i++) {
-            segLength = 5 + UnityEngine.Random.value * 20;
-            dir = UnityEngine.Random.value * 60 - 30;
+            segLength = 20 + UnityEngine.Random.value * 20;
+            dir = UnityEngine.Random.value * 40 - 20;
             riverSegs[i * 2].mesh = straightRiverSegment(segLength, currRiverPos, currDir);
             riverSegs[i * 2 + 1].mesh = curvedRiverSegment(dir);
             riverSegMeshes.Add(riverSegs[i * 2].mesh);
@@ -92,7 +92,7 @@ public class StreetGenerator : MonoBehaviour
             streetBuds.add(streetBuds.current().growStreet(streetBuds));
             if (streetBuds.getLiveStreets() > 0 && checkOutOFBounds(streetBuds.current().getPos())) streetBuds.remove();
             iter++;
-            if (streetBuds.current().getRoadWidth() > 1 && (iter == fourWidthDepth || iter == twoWidthDepth || iter == oneWidthDepth)) {
+            if (streetBuds.current().getRoadWidth() > 1 && (iter == fourWidthDepth || iter == twoWidthDepth)) {
                 float currWidth = streetBuds.current().getRoadWidth();
                 while(streetBuds.current().getRoadWidth() == currWidth) {
                     streetBuds.remove();
@@ -110,44 +110,49 @@ public class StreetGenerator : MonoBehaviour
         streets.GetComponent<MeshFilter>().mesh = streetBuds.CombineStreets();
         streets.GetComponent<Renderer>().material.color = new Color(0.2f, 0.2f, 0.2f, 1.0f);
 
-        // for (int i = 0; i < 6; i++) {
-        //     Vector3 buildingLoc;
-        //     bool validLoc = false;
-        //     //20 tries at finding a building location before giving up
-        //     for (int j = 0; j < 20; j++) {
-        //         Street street = streetBuds.getDead((int) Mathf.Floor(UnityEngine.Random.value * streetBuds.getDeadHighways()));
-        //         print(street.getMeshSize());
-        //         int ind = 1 + 2 * (int) Mathf.Floor(UnityEngine.Random.value * (street.getMeshSize() / 2f));
-        //         print(ind);
-        //         Mesh seg = street.getSegment(1 + 2 * (int) Mathf.Floor(UnityEngine.Random.value * (street.getMeshSize() / 2f - 2)));
-        //         buildingLoc = Street.extendRay(Vector3.Lerp(seg.vertices[0], seg.vertices[3], 0.5f), (UnityEngine.Random.value > 0.5 ? 90 : -90) + Street.calcVectorAngle(seg.vertices[2] - seg.vertices[0]), 15);
-        //         if (!streetBuds.checkBuildingSpawnable(buildingLoc, Street.calcVectorAngle(seg.vertices[2] - seg.vertices[0]), riverMesh)) {
-        //             validLoc = true;
-        //             break;
-        //         };
-        //     }
-        //     if (validLoc) {
-        //         float size = 10;
-        //         Vector3[] buildingVerts = 
-        //                {new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir - 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir - 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir + 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir + 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 - 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 - 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 + 30)), 0, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 + 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir - 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir - 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (90 + dir + 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (90 + dir + 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 - 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 - 30))),
-        //                 new Vector3(size * Mathf.Cos(Mathf.Deg2Rad * (dir - 90 + 30)), 10, size * Mathf.Sin(Mathf.Deg2Rad * (dir - 90 + 30)))};
-        //         int[] buildingTris = {0, 4, 5, 0, 5, 1, 1, 5, 6, 1, 6, 2, 2, 6, 7, 2, 7, 3, 3, 7, 4, 3, 4, 0, 6, 5, 4, 6, 4, 7};
-        //         Mesh buildingMesh = new Mesh();
-        //         buildingMesh.vertices = buildingVerts;
-        //         buildingMesh.triangles = buildingTris;
-        //         GameObject building = new GameObject("Building");
-        //         building.AddComponent<MeshFilter>();
-        //         building.AddComponent<MeshRenderer>();
-        //         building.GetComponent<MeshFilter>().mesh = buildingMesh;
-        //         building.GetComponent<Renderer>().material.color = new Color(0.5f, 0.2f, 0.2f, 1);
-        //     }
-        // }
+        for (int i = 0; i < 20; i++) {
+            Vector3 buildingLoc = new Vector3(0, 0, 0);
+            bool validLoc = false;
+            float buildingDir = 0;
+            //40 tries at finding a building location before giving up
+            for (int j = 0; j < 100; j++) {
+                validLoc = false;
+                Street street = streetBuds.getDead((int) Mathf.Floor(UnityEngine.Random.value * streetBuds.getDeadHighways()));
+                if (street.getMeshSize() < 2) continue;
+                int ind = 1 + 2 * (int) Mathf.Floor((UnityEngine.Random.value * street.getMeshSize()) / 2f);
+                print(ind);
+                Mesh seg = street.getSegment(1 + 2 * (int) Mathf.Floor(UnityEngine.Random.value * (street.getMeshSize() / 2f - 2)));
+                print(seg.vertices[0]);
+                buildingDir = Street.calcVectorAngle(seg.vertices[2] - seg.vertices[0]);
+                buildingLoc = Street.extendRay(Vector3.Lerp(seg.vertices[0], seg.vertices[3], 0.5f), (UnityEngine.Random.value > 0.5 ? 90 : -90) + buildingDir, 40);
+                if (!streetBuds.checkBuildingSpawnable(buildingLoc, buildingDir, riverMesh)) {
+                    validLoc = true;
+                    break;
+                };
+            }
+            if (validLoc) {
+                print("building! " + buildingLoc);
+                float size = 20;
+                Vector3[] buildingVerts = 
+                       {new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (90 + buildingDir - 60)), 0, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (90 + buildingDir - 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (90 + buildingDir + 60)), 0, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (90 + buildingDir + 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (buildingDir - 90 - 60)), 0, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (buildingDir - 90 - 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (buildingDir - 90 + 60)), 0, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (buildingDir - 90 + 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (90 + buildingDir - 60)), 20, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (90 + buildingDir - 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (90 + buildingDir + 60)), 20, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (90 + buildingDir + 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (buildingDir - 90 - 60)), 20, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (buildingDir - 90 - 60))),
+                        new Vector3(buildingLoc.x + size * Mathf.Cos(Mathf.Deg2Rad * (buildingDir - 90 + 60)), 20, buildingLoc.z + size * Mathf.Sin(Mathf.Deg2Rad * (buildingDir - 90 + 60)))};
+                int[] buildingTris = {0, 4, 5, 0, 5, 1, 1, 5, 6, 1, 6, 2, 2, 6, 7, 2, 7, 3, 3, 7, 4, 3, 4, 0, 6, 5, 4, 6, 4, 7};
+                Mesh buildingMesh = new Mesh();
+                buildingMesh.vertices = buildingVerts;
+                buildingMesh.triangles = buildingTris;
+                GameObject building = new GameObject("Building");
+                building.AddComponent<MeshFilter>();
+                building.AddComponent<MeshRenderer>();
+                building.GetComponent<MeshFilter>().mesh = buildingMesh;
+                building.GetComponent<Renderer>().material.color = new Color(0.5f, 0.2f, 0.2f, 1);
+            }
+        }
     }
 
     // Update is called once per frame

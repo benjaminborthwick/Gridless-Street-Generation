@@ -8,6 +8,9 @@ public class CameraMotion : MonoBehaviour {
 
 	int max_plane = -1;       // the number of planes that we have made
 	float plane_size = 3.0f;  // the size of the planes
+	bool firstPerson = false;
+	float prevSpace;
+	public Camera cam;
 
 	void Start () {
 		
@@ -21,18 +24,28 @@ public class CameraMotion : MonoBehaviour {
 		// get the horizontal and vertical controls (arrows, or WASD keys)
 		float dx = Input.GetAxis ("Horizontal");
 		float dz = Input.GetAxis ("Vertical");
+		float space = Input.GetAxis("Jump");
 
 		// sensitivity factors for translate and rotate
 		float translate_factor = 0.3f;
-		float rotate_factor = 5.0f;
+		float rotate_factor = 2.0f;
 
+		if (space == 1 && space != prevSpace) {
+			firstPerson = !firstPerson;
+			if (firstPerson) {
+				Camera.main.transform.position = new Vector3(100, 7, 100);
+			} else {
+				Camera.main.transform.position = new Vector3(730, 220, 42);
+
+			}
+		}
 		// move the camera based on keyboard input
-		if (Camera.current != null) {
+		if (Camera.main != null) {
 			// translate forward or backwards
-			Camera.current.transform.Translate (0, 0, dz * translate_factor);
+			Camera.main.transform.Translate (0, 0, dz * translate_factor);
 
 			// rotate left or right
-			Camera.current.transform.Rotate (0, dx * rotate_factor, 0);
+			Camera.main.transform.Rotate (0, dx * rotate_factor, 0);
 
 		}
 
@@ -42,7 +55,7 @@ public class CameraMotion : MonoBehaviour {
 
 		// if the camera has moved far enough, create another plane
 		if (cam_pos.z > (max_plane + 0.5) * plane_size * 2) {
-			create_new_plane ();
+			//create_new_plane ();
 		}
 
 	}
